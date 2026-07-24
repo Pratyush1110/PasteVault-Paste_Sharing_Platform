@@ -10,6 +10,9 @@
 
     <!-- Prism.js Dark Theme (Okaidia) CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css">
+
+    <!-- CryptoJS for client-side, zero-knowledge AES encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -34,6 +37,12 @@
                 <button id="create-btn" onclick="createPaste()">Create Paste</button>
             </div>
 
+            <div class="controls password-row">
+                <label for="paste-password">Password (optional):</label>
+                <input type="password" id="paste-password" placeholder="Leave blank for no encryption" autocomplete="new-password">
+            </div>
+            <p class="hint">🔒 If you set a password, your paste is encrypted in your browser before it's sent. The server only ever stores ciphertext — we never see your password or your plaintext.</p>
+
             <div id="create-result" class="result-box hidden">
                 <p>Paste created! Shareable Link:</p>
                 <div class="share-url">
@@ -54,9 +63,20 @@
                     <span id="meta-created"></span>
                     <span id="meta-expires"></span>
                 </div>
+
+                <!-- Shown only when the fetched paste has is_encrypted = true -->
+                <div id="decrypt-box" class="hidden">
+                    <p>🔒 This paste is encrypted. Enter the password to view it.</p>
+                    <div class="controls">
+                        <input type="password" id="decrypt-password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key === 'Enter') attemptDecrypt();">
+                        <button onclick="attemptDecrypt()">Unlock</button>
+                    </div>
+                    <p id="decrypt-error" class="error-text hidden">Incorrect password!</p>
+                </div>
+
                 <!-- Pre & Code block formatted for Prism.js -->
-                <pre><code id="paste-display" class="language-clike"></code></pre>
-                <button class="danger-btn" onclick="deletePaste()">Delete Paste</button>
+                <pre id="paste-display-wrapper" class="hidden"><code id="paste-display" class="language-clike"></code></pre>
+                <button id="delete-btn" class="danger-btn hidden" onclick="deletePaste()">Delete Paste</button>
             </div>
         </section>
     </div>

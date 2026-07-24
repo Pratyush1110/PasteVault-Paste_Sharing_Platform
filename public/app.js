@@ -1,19 +1,34 @@
 let currentPasteId = null;
+let currentIsEncrypted = false;
 
 async function createPaste() {
     const content = document.getElementById("paste-content").value;
     const ttlMinutes = parseInt(document.getElementById("ttl-select").value);
+    const password = document.getElementById("paste-password").value;
 
     if (!content.trim()) {
         alert("Please enter some text!");
         return;
     }
 
+    // Zero-knowledge encryption: if a password was given, encrypt the
+    // content locally in the browser. Only the ciphertext ever leaves
+    // the client — the server and database never see the plaintext or
+    // the password.
+    const isEncrypted = password.length > 0;
+    const payloadContent = isEncrypted
+        ? CryptoJS.AES.encrypt(content, password).toString()
+        : content;
+
     try {
         const response = await fetch("/api/paste", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: content, ttl_minutes: ttlMinutes })
+            body: JSON.stringify({
+                content: payloadContent,
+                ttl_minutes: ttlMinutes,
+                is_encrypted: isEncrypted
+            })
         });
 
         const data = await response.json();
@@ -22,6 +37,7 @@ async function createPaste() {
             const shareUrl = `${window.location.origin}/${data.id}`;
             document.getElementById("share-link").value = shareUrl;
             document.getElementById("create-result").classList.remove("hidden");
+            document.getElementById("paste-password").value = "";
         } else {
             alert(data.error || "Failed to create paste");
         }
@@ -30,6 +46,10 @@ async function createPaste() {
     }
 }
 
+// Holds the raw paste payload (ciphertext or plaintext) between fetch and render,
+// so we can re-render after a decrypt attempt without another network request.
+let pendingPasteContent = null;
+
 async function fetchPaste(pasteId) {
     try {
         const response = await fetch(`/api/paste/${pasteId}`);
@@ -37,24 +57,26 @@ async function fetchPaste(pasteId) {
 
         if (response.ok) {
             currentPasteId = data.id;
-            const codeElem = document.getElementById("paste-display");
-            
-            // Set text content safely
-            codeElem.textContent = data.content;
-            
+            currentIsEncrypted = !!data.is_encrypted;
+            pendingPasteContent = data.content;
+
             const created = new Date(data.created_at * 1000).toLocaleString();
             const expires = data.expires_at === -1 ? "Never" : new Date(data.expires_at * 1000).toLocaleString();
-
             document.getElementById("meta-created").textContent = `Created: ${created}`;
             document.getElementById("meta-expires").textContent = `Expires: ${expires}`;
-            
+
             // Hide Create section, show Read section
             document.getElementById("create-view").classList.add("hidden");
             document.getElementById("read-view").classList.remove("hidden");
 
-            // Trigger Prism Syntax Highlighting
-            if (window.Prism) {
-                Prism.highlightElement(codeElem);
+            if (currentIsEncrypted) {
+                // Prompt for password; content is only rendered after a
+                // successful local decryption in attemptDecrypt().
+                document.getElementById("decrypt-box").classList.remove("hidden");
+                document.getElementById("paste-display-wrapper").classList.add("hidden");
+                document.getElementById("delete-btn").classList.add("hidden");
+            } else {
+                renderPasteContent(data.content);
             }
         } else {
             alert(data.error || "Paste not found or has expired!");
@@ -63,6 +85,51 @@ async function fetchPaste(pasteId) {
     } catch (err) {
         alert("Error retrieving paste!");
         window.location.href = "/";
+    }
+}
+
+function renderPasteContent(plaintext) {
+    const codeElem = document.getElementById("paste-display");
+
+    // Set text content safely
+    codeElem.textContent = plaintext;
+
+    document.getElementById("decrypt-box").classList.add("hidden");
+    document.getElementById("paste-display-wrapper").classList.remove("hidden");
+    document.getElementById("delete-btn").classList.remove("hidden");
+
+    // Trigger Prism Syntax Highlighting
+    if (window.Prism) {
+        Prism.highlightElement(codeElem);
+    }
+}
+
+function attemptDecrypt() {
+    const password = document.getElementById("decrypt-password").value;
+    const errorEl = document.getElementById("decrypt-error");
+
+    if (!password) {
+        errorEl.textContent = "Please enter a password.";
+        errorEl.classList.remove("hidden");
+        return;
+    }
+
+    try {
+        const bytes = CryptoJS.AES.decrypt(pendingPasteContent, password);
+        const plaintext = bytes.toString(CryptoJS.enc.Utf8);
+
+        // CryptoJS doesn't throw on a wrong password with this cipher mode —
+        // it just yields empty/garbage bytes that fail UTF-8 decoding.
+        // An empty result for non-empty ciphertext means the password was wrong.
+        if (!plaintext) {
+            throw new Error("decryption produced empty output");
+        }
+
+        errorEl.classList.add("hidden");
+        renderPasteContent(plaintext);
+    } catch (err) {
+        errorEl.textContent = "Incorrect password!";
+        errorEl.classList.remove("hidden");
     }
 }
 

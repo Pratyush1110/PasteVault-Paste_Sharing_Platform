@@ -165,6 +165,43 @@ pre {
     background-color: #475569;
 }   
 
+.password-row {
+    margin-top: 0.75rem;
+}
+
+.password-row input[type="password"] {
+    flex: 1;
+    background-color: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+}
+
+.hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+#decrypt-box .controls input[type="password"] {
+    flex: 1;
+    background-color: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+}
+
+.error-text {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
 /* Prism.js Overrides for clean container integration */
 pre[class*="language-"] {
     background-color: #0f172a !important;

@@ -21,6 +21,7 @@ bool DatabaseManager::init() {
         CREATE TABLE IF NOT EXISTS pastes (
             id TEXT PRIMARY KEY,
             content TEXT NOT NULL,
+            is_encrypted INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL,
             expires_at INTEGER NOT NULL
         );
@@ -33,11 +34,21 @@ bool DatabaseManager::init() {
         return false;
     }
 
+    // Migration path: if an older pastevault.db already exists without this
+    // column, ALTER TABLE adds it. If the column already exists (fresh DB
+    // created above, or already-migrated DB), SQLite returns an error
+    // ("duplicate column name") which we simply ignore.
+    const char* migrate_query = "ALTER TABLE pastes ADD COLUMN is_encrypted INTEGER NOT NULL DEFAULT 0;";
+    char* migrate_err = nullptr;
+    if (sqlite3_exec(db_, migrate_query, nullptr, nullptr, &migrate_err) != SQLITE_OK) {
+        sqlite3_free(migrate_err); // expected on fresh/already-migrated DBs, safe to ignore
+    }
+
     return true;
 }
 
 bool DatabaseManager::save_paste(const Paste& paste) {
-    const char* sql = "INSERT INTO pastes (id, content, created_at, expires_at) VALUES (?, ?, ?, ?);";
+    const char* sql = "INSERT INTO pastes (id, content, is_encrypted, created_at, expires_at) VALUES (?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -46,8 +57,9 @@ bool DatabaseManager::save_paste(const Paste& paste) {
 
     sqlite3_bind_text(stmt, 1, paste.id.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, paste.content.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int64(stmt, 3, paste.created_at);
-    sqlite3_bind_int64(stmt, 4, paste.expires_at);
+    sqlite3_bind_int(stmt, 3, paste.is_encrypted ? 1 : 0);
+    sqlite3_bind_int64(stmt, 4, paste.created_at);
+    sqlite3_bind_int64(stmt, 5, paste.expires_at);
 
     bool result = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
@@ -55,7 +67,7 @@ bool DatabaseManager::save_paste(const Paste& paste) {
 }
 
 std::optional<Paste> DatabaseManager::get_paste(const std::string& id) {
-    const char* sql = "SELECT id, content, created_at, expires_at FROM pastes WHERE id = ?;";
+    const char* sql = "SELECT id, content, is_encrypted, created_at, expires_at FROM pastes WHERE id = ?;";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -68,12 +80,13 @@ std::optional<Paste> DatabaseManager::get_paste(const std::string& id) {
         Paste paste;
         paste.id = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         paste.content = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        paste.created_at = sqlite3_column_int64(stmt, 2);
-        paste.expires_at = sqlite3_column_int64(stmt, 3);
-        
+        paste.is_encrypted = sqlite3_column_int(stmt, 2) != 0;
+        paste.created_at = sqlite3_column_int64(stmt, 3);
+        paste.expires_at = sqlite3_column_int64(stmt, 4);
+
         sqlite3_finalize(stmt);
 
-        // Check expiration on access
+        // Check expiration on access (unchanged TTL cleanup logic)
         long long now = std::time(nullptr);
         if (paste.expires_at != -1 && now > paste.expires_at) {
             delete_paste(id);

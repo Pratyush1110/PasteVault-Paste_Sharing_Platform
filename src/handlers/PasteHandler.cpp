@@ -35,11 +35,17 @@ crow::response PasteHandler::create_paste(const crow::request& req) {
     std::string content = body["content"].s();
     int ttl_minutes = body.has("ttl_minutes") ? body["ttl_minutes"].i() : -1;
 
+    // Client already encrypted `content` locally with CryptoJS if a password
+    // was set; the server just stores whatever ciphertext/plaintext it's
+    // given plus a flag so the frontend knows to prompt for a password later.
+    // The server never sees the password itself.
+    bool is_encrypted = body.has("is_encrypted") ? body["is_encrypted"].b() : false;
+
     std::string paste_id = generate_random_id();
     long long now = std::time(nullptr);
     long long expires_at = calculate_expiration(ttl_minutes);
 
-    Paste paste{paste_id, content, now, expires_at};
+    Paste paste{paste_id, content, is_encrypted, now, expires_at};
 
     if (!db_.save_paste(paste)) {
         return crow::response(500, crow::json::wvalue({{"error", "Failed to persist paste to database"}}));
@@ -47,6 +53,7 @@ crow::response PasteHandler::create_paste(const crow::request& req) {
 
     crow::json::wvalue res;
     res["id"] = paste_id;
+    res["is_encrypted"] = is_encrypted;
     res["created_at"] = now;
     res["expires_at"] = expires_at;
     
@@ -62,7 +69,8 @@ crow::response PasteHandler::get_paste(const std::string& id) {
     const auto& paste = paste_opt.value();
     crow::json::wvalue res;
     res["id"] = paste.id;
-    res["content"] = paste.content;
+    res["content"] = paste.content; // ciphertext if is_encrypted is true; server never decrypts
+    res["is_encrypted"] = paste.is_encrypted;
     res["created_at"] = paste.created_at;
     res["expires_at"] = paste.expires_at;
 
