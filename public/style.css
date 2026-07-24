@@ -150,7 +150,11 @@ header h1 {
 }
 
 .logo-mark {
+    color: initial;
     -webkit-text-fill-color: initial;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
     filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.45));
 }
 
