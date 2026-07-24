@@ -164,3 +164,19 @@ pre {
 .secondary-btn:hover {
     background-color: #475569;
 }   
+
+/* Prism.js Overrides for clean container integration */
+pre[class*="language-"] {
+    background-color: #0f172a !important;
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border: 1px solid #334155;
+    overflow-x: auto;
+}
+
+code[class*="language-"] {
+    font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 0.95rem;
+    text-shadow: none !important;
+}

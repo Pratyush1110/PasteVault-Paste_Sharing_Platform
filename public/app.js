@@ -19,7 +19,6 @@ async function createPaste() {
         const data = await response.json();
 
         if (response.ok) {
-            // Clean URL path (e.g. http://localhost:18080/RCOtjlQ)
             const shareUrl = `${window.location.origin}/${data.id}`;
             document.getElementById("share-link").value = shareUrl;
             document.getElementById("create-result").classList.remove("hidden");
@@ -38,7 +37,10 @@ async function fetchPaste(pasteId) {
 
         if (response.ok) {
             currentPasteId = data.id;
-            document.getElementById("paste-display").textContent = data.content;
+            const codeElem = document.getElementById("paste-display");
+            
+            // Set text content safely
+            codeElem.textContent = data.content;
             
             const created = new Date(data.created_at * 1000).toLocaleString();
             const expires = data.expires_at === -1 ? "Never" : new Date(data.expires_at * 1000).toLocaleString();
@@ -49,6 +51,11 @@ async function fetchPaste(pasteId) {
             // Hide Create section, show Read section
             document.getElementById("create-view").classList.add("hidden");
             document.getElementById("read-view").classList.remove("hidden");
+
+            // Trigger Prism Syntax Highlighting
+            if (window.Prism) {
+                Prism.highlightElement(codeElem);
+            }
         } else {
             alert(data.error || "Paste not found or has expired!");
             window.location.href = "/";
@@ -88,13 +95,11 @@ function copyLink() {
 
 // Route handler on page load
 window.addEventListener("load", () => {
-    // Extract pathname ID (e.g. "/RCOtjlQ" -> "RCOtjlQ")
     const path = window.location.pathname.substring(1);
 
     if (path && path !== "index.html") {
         fetchPaste(path);
     } else {
-        // Show Create view on "/"
         document.getElementById("create-view").classList.remove("hidden");
         document.getElementById("read-view").classList.add("hidden");
     }
