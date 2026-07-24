@@ -60,6 +60,9 @@ let pendingPasteContent = null;
 
 async function fetchPaste(pasteId) {
     try {
+        // RESET BANNER AT START
+        document.getElementById("burn-banner").classList.add("hidden");
+
         const response = await fetch(`/api/paste/${pasteId}`);
         const data = await response.json();
 
@@ -69,18 +72,18 @@ async function fetchPaste(pasteId) {
             const wasBurned = !!data.burn_after_reading;
             pendingPasteContent = data.content;
 
-            // ALWAYS hide the burn banner first as a baseline reset
-            document.getElementById("burn-banner").classList.add("hidden");
-
             const created = new Date(data.created_at * 1000).toLocaleString();
             document.getElementById("meta-created").textContent = `Created: ${created}`;
 
             if (wasBurned) {
                 document.getElementById("meta-expires").textContent = "🔥 Burned after reading";
                 document.getElementById("burn-banner").classList.remove("hidden");
+                document.getElementById("delete-btn").classList.add("hidden");
             } else {
                 const expires = data.expires_at === -1 ? "Never" : new Date(data.expires_at * 1000).toLocaleString();
                 document.getElementById("meta-expires").textContent = `Expires: ${expires}`;
+                document.getElementById("burn-banner").classList.add("hidden");
+                document.getElementById("delete-btn").classList.remove("hidden");
             }
 
             // Hide Create section, show Read section

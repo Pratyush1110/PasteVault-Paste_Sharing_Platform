@@ -526,6 +526,10 @@ textarea {
     margin-bottom: 1rem;
 }
 
+.burn-banner.hidden {
+    display: none !important;
+}
+
 .burn-banner strong {
     color: #fca5a5;
 }
