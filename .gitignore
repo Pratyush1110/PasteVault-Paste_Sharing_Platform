@@ -1,0 +1,15 @@
+# Ignore build artifacts
+build/
+bin/
+*.exe
+*.obj
+*.o
+*.a
+*.dll
+
+# Ignore local SQLite database
+*.db
+pastevault.db
+
+# Ignore VS Code local settings
+.vscode/

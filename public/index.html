@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PasteVault - Fast C++ Pastebin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 PasteVault</h1>
+            <p>Powered by C++, Crow & SQLite</p>
+        </header>
+
+        <!-- Form to Create Paste -->
+        <section class="card">
+            <h2>New Paste</h2>
+            <textarea id="paste-content" placeholder="Paste your text or code here..." rows="8"></textarea>
+            
+            <div class="controls">
+                <label for="ttl-select">Expiration:</label>
+                <select id="ttl-select">
+                    <option value="-1">Never</option>
+                    <option value="5">5 Minutes</option>
+                    <option value="60" selected>1 Hour</option>
+                    <option value="1440">1 Day</option>
+                </select>
+                <button id="create-btn" onclick="createPaste()">Create Paste</button>
+            </div>
+
+            <div id="create-result" class="result-box hidden">
+                <p>Paste created! Shareable Link:</p>
+                <div class="share-url">
+                    <input type="text" id="share-link" readonly>
+                    <button onclick="copyLink()">Copy</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search / Lookup Paste -->
+        <section class="card">
+            <h2>Lookup Paste</h2>
+            <div class="lookup-box">
+                <input type="text" id="lookup-id" placeholder="Enter Paste ID (e.g. RCOtjlQ)">
+                <button onclick="fetchPaste()">Retrieve</button>
+            </div>
+
+            <div id="view-result" class="result-box hidden">
+                <div class="paste-meta">
+                    <span id="meta-created"></span>
+                    <span id="meta-expires"></span>
+                </div>
+                <pre><code id="paste-display"></code></pre>
+                <button class="danger-btn" onclick="deletePaste()">Delete Paste</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
