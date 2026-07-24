@@ -3,13 +3,19 @@ let currentIsEncrypted = false;
 
 async function createPaste() {
     const content = document.getElementById("paste-content").value;
-    const ttlMinutes = parseInt(document.getElementById("ttl-select").value);
+    const ttlValue = document.getElementById("ttl-select").value;
     const password = document.getElementById("paste-password").value;
 
     if (!content.trim()) {
         alert("Please enter some text!");
         return;
     }
+
+    // "burn" is a special dropdown value: the paste never expires by TTL,
+    // but the server deletes it the instant it's read once (see get_paste
+    // in DatabaseManager). ttl_minutes is sent as -1 (never) in that case.
+    const burnAfterReading = ttlValue === "burn";
+    const ttlMinutes = burnAfterReading ? -1 : parseInt(ttlValue);
 
     // Zero-knowledge encryption: if a password was given, encrypt the
     // content locally in the browser. Only the ciphertext ever leaves
@@ -27,7 +33,8 @@ async function createPaste() {
             body: JSON.stringify({
                 content: payloadContent,
                 ttl_minutes: ttlMinutes,
-                is_encrypted: isEncrypted
+                is_encrypted: isEncrypted,
+                burn_after_reading: burnAfterReading
             })
         });
 
@@ -38,6 +45,7 @@ async function createPaste() {
             document.getElementById("share-link").value = shareUrl;
             document.getElementById("create-result").classList.remove("hidden");
             document.getElementById("paste-password").value = "";
+            showToast(shareUrl);
         } else {
             alert(data.error || "Failed to create paste");
         }
@@ -58,26 +66,38 @@ async function fetchPaste(pasteId) {
         if (response.ok) {
             currentPasteId = data.id;
             currentIsEncrypted = !!data.is_encrypted;
+            const wasBurned = !!data.burn_after_reading;
             pendingPasteContent = data.content;
 
+            // ALWAYS hide the burn banner first as a baseline reset
+            document.getElementById("burn-banner").classList.add("hidden");
+
             const created = new Date(data.created_at * 1000).toLocaleString();
-            const expires = data.expires_at === -1 ? "Never" : new Date(data.expires_at * 1000).toLocaleString();
             document.getElementById("meta-created").textContent = `Created: ${created}`;
-            document.getElementById("meta-expires").textContent = `Expires: ${expires}`;
+
+            if (wasBurned) {
+                document.getElementById("meta-expires").textContent = "🔥 Burned after reading";
+                document.getElementById("burn-banner").classList.remove("hidden");
+            } else {
+                const expires = data.expires_at === -1 ? "Never" : new Date(data.expires_at * 1000).toLocaleString();
+                document.getElementById("meta-expires").textContent = `Expires: ${expires}`;
+            }
 
             // Hide Create section, show Read section
             document.getElementById("create-view").classList.add("hidden");
             document.getElementById("read-view").classList.remove("hidden");
 
             if (currentIsEncrypted) {
-                // Prompt for password; content is only rendered after a
-                // successful local decryption in attemptDecrypt().
                 document.getElementById("decrypt-box").classList.remove("hidden");
                 document.getElementById("code-toolbar").classList.add("hidden");
                 document.getElementById("paste-display-wrapper").classList.add("hidden");
                 document.getElementById("delete-btn").classList.add("hidden");
             } else {
-                renderPasteContent(data.content);
+                renderPasteContent(data.content, wasBurned);
+            }
+
+            if (wasBurned) {
+                document.getElementById("delete-btn").classList.add("hidden");
             }
         } else {
             alert(data.error || "Paste not found or has expired!");
@@ -89,19 +109,23 @@ async function fetchPaste(pasteId) {
     }
 }
 
-function renderPasteContent(plaintext) {
+function renderPasteContent(plaintext, wasBurned = false) {
     const codeElem = document.getElementById("paste-display");
 
-    // Set text content safely
     codeElem.textContent = plaintext;
 
     document.getElementById("decrypt-box").classList.add("hidden");
     document.getElementById("code-toolbar").classList.remove("hidden");
     document.getElementById("paste-display-wrapper").classList.remove("hidden");
-    document.getElementById("delete-btn").classList.remove("hidden");
+    
+    if (wasBurned) {
+        document.getElementById("delete-btn").classList.add("hidden");
+    } else {
+        document.getElementById("delete-btn").classList.remove("hidden");
+    }
+
     resetCopyButton();
 
-    // Trigger Prism Syntax Highlighting
     if (window.Prism) {
         Prism.highlightElement(codeElem);
     }
@@ -161,6 +185,63 @@ function copyLink() {
     copyText.select();
     navigator.clipboard.writeText(copyText.value);
     alert("Copied link to clipboard!");
+}
+
+let toastDismissTimer = null;
+let toastCopyResetTimer = null;
+
+function showToast(shareUrl) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toast-share-link").value = shareUrl;
+    resetToastCopyButton();
+
+    // Make it visible in the layout first, then flip the animation class
+    // on the next frame so the slide-down transition actually plays.
+    toast.classList.remove("hidden");
+    requestAnimationFrame(() => {
+        toast.classList.add("toast-visible");
+    });
+
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = setTimeout(hideToast, 6000);
+}
+
+function hideToast() {
+    const toast = document.getElementById("toast");
+    clearTimeout(toastDismissTimer);
+    toast.classList.remove("toast-visible");
+
+    // Wait for the slide-up transition to finish before removing it from
+    // the layout entirely.
+    setTimeout(() => {
+        if (!toast.classList.contains("toast-visible")) {
+            toast.classList.add("hidden");
+        }
+    }, 450);
+}
+
+function copyToastLink() {
+    const url = document.getElementById("toast-share-link").value;
+    const btn = document.getElementById("toast-copy-btn");
+    const btnText = document.getElementById("toast-copy-btn-text");
+
+    if (!url) return;
+
+    navigator.clipboard.writeText(url).then(() => {
+        btnText.textContent = "Copied! ✓";
+
+        clearTimeout(toastCopyResetTimer);
+        toastCopyResetTimer = setTimeout(resetToastCopyButton, 2000);
+    }).catch(() => {
+        alert("Couldn't copy to clipboard. Your browser may be blocking clipboard access.");
+    });
+}
+
+function resetToastCopyButton() {
+    const btnText = document.getElementById("toast-copy-btn-text");
+    if (!btnText) return;
+    clearTimeout(toastCopyResetTimer);
+    btnText.textContent = "Copy Link";
 }
 
 let copyResetTimer = null;

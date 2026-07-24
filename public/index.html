@@ -47,6 +47,7 @@
                     <option value="5">5 Minutes</option>
                     <option value="60" selected>1 Hour</option>
                     <option value="1440">1 Day</option>
+                    <option value="burn">🔥 Burn After Reading</option>
                 </select>
                 <button id="create-btn" class="primary-btn" onclick="createPaste()">Create Paste</button>
             </div>
@@ -73,6 +74,12 @@
                 <button class="secondary-btn" onclick="window.location.href='/'">+ New Paste</button>
             </div>
             <div id="view-result" class="result-box">
+                <!-- Shown only when this paste had burn_after_reading = true; it has
+                     already been permanently deleted from the DB by the time this renders -->
+                <div id="burn-banner" class="burn-banner hidden">
+                    ⚠️ <strong>Warning:</strong> This paste was set to Burn After Reading and has now been permanently deleted from the database.
+                </div>
+
                 <div class="paste-meta">
                     <span id="meta-created"></span>
                     <span id="meta-expires"></span>
@@ -101,6 +108,20 @@
                 <button id="delete-btn" class="danger-btn hidden" onclick="deletePaste()">Delete Paste</button>
             </div>
         </section>
+    </div>
+
+    <!-- Toast notification: slides down from top-center on paste creation -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite">
+        <div class="toast-body">
+            <p class="toast-title">Paste Created Successfully! 🚀</p>
+            <div class="toast-url-row">
+                <input type="text" id="toast-share-link" readonly>
+                <button id="toast-copy-btn" class="primary-btn small-btn" onclick="copyToastLink()">
+                    <span id="toast-copy-btn-text">Copy Link</span>
+                </button>
+            </div>
+        </div>
+        <button class="toast-close" onclick="hideToast()" aria-label="Dismiss notification">✕</button>
     </div>
 
     <!-- Prism.js Core + Autoloader Plugin -->

@@ -510,6 +510,118 @@ textarea {
 }
 
 /* ==========================================================================
+   Burn-after-reading warning banner
+   ========================================================================== */
+.burn-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fecaca;
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.burn-banner strong {
+    color: #fca5a5;
+}
+
+/* ==========================================================================
+   Toast notification (top-center, slide-down)
+   ========================================================================== */
+.toast {
+    position: fixed;
+    top: 1.5rem;
+    left: 50%;
+    z-index: 100;
+    width: min(92vw, 460px);
+
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+
+    background: var(--surface-glass);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), 0 24px 48px -16px rgba(2, 6, 23, 0.75), var(--shadow-glow);
+
+    transform: translate(-50%, -140%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.45s var(--ease), opacity 0.3s var(--ease);
+}
+
+.toast.toast-visible {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Kept for compatibility: `.hidden` fully removes it from flow while closed,
+   `.toast-visible` (toggled by JS) drives the actual slide animation. */
+.toast.hidden {
+    display: none;
+}
+
+.toast-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+}
+
+.toast-url-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toast-url-row input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background-color: var(--bg-elevated);
+}
+
+.toast-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+    box-shadow: none;
+}
+
+.toast-close:hover {
+    color: var(--text-primary);
+    background-color: rgba(148, 163, 184, 0.1);
+    border-radius: var(--radius-sm);
+}
+
+@media (max-width: 520px) {
+    .toast {
+        top: 1rem;
+    }
+
+    .toast-url-row {
+        flex-direction: column;
+    }
+}
+
+/* ==========================================================================
    Responsive
    ========================================================================== */
 @media (max-width: 520px) {

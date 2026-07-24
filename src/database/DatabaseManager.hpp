@@ -9,6 +9,7 @@ struct Paste {
     std::string id;
     std::string content;
     bool is_encrypted = false;
+    bool burn_after_reading = false;
     long long created_at;
     long long expires_at; // -1 means never expires
 };

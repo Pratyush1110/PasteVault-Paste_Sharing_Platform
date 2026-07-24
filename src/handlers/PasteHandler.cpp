@@ -41,11 +41,15 @@ crow::response PasteHandler::create_paste(const crow::request& req) {
     // The server never sees the password itself.
     bool is_encrypted = body.has("is_encrypted") ? body["is_encrypted"].b() : false;
 
+    // Burn-after-reading: the paste is deleted from SQLite the instant it's
+    // read once, regardless of its TTL. See DatabaseManager::get_paste.
+    bool burn_after_reading = body.has("burn_after_reading") ? body["burn_after_reading"].b() : false;
+
     std::string paste_id = generate_random_id();
     long long now = std::time(nullptr);
     long long expires_at = calculate_expiration(ttl_minutes);
 
-    Paste paste{paste_id, content, is_encrypted, now, expires_at};
+    Paste paste{paste_id, content, is_encrypted, burn_after_reading, now, expires_at};
 
     if (!db_.save_paste(paste)) {
         return crow::response(500, crow::json::wvalue({{"error", "Failed to persist paste to database"}}));
@@ -54,6 +58,7 @@ crow::response PasteHandler::create_paste(const crow::request& req) {
     crow::json::wvalue res;
     res["id"] = paste_id;
     res["is_encrypted"] = is_encrypted;
+    res["burn_after_reading"] = burn_after_reading;
     res["created_at"] = now;
     res["expires_at"] = expires_at;
     
@@ -71,6 +76,7 @@ crow::response PasteHandler::get_paste(const std::string& id) {
     res["id"] = paste.id;
     res["content"] = paste.content; // ciphertext if is_encrypted is true; server never decrypts
     res["is_encrypted"] = paste.is_encrypted;
+    res["burn_after_reading"] = paste.burn_after_reading; // true means this response is the only one ever served — it's already deleted
     res["created_at"] = paste.created_at;
     res["expires_at"] = paste.expires_at;
 
