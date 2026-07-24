@@ -3,6 +3,7 @@
 #include "handlers/PasteHandler.hpp"
 #include "routes/Router.hpp"
 #include <iostream>
+#include <cstdlib>
 
 int main() {
     DatabaseManager db("pastevault.db");
@@ -21,7 +22,7 @@ int main() {
         res.end();
     });
 
-    // Serve any static asset (style.css, app.js, etc.) from public/
+    // Serve static assets (style.css, app.js, etc.)
     CROW_ROUTE(app, "/<string>")
     ([](crow::response& res, std::string filename) {
         res.set_static_file_info("public/" + filename);
@@ -31,8 +32,12 @@ int main() {
     // Attach REST API routes
     setup_routes(app, paste_handler);
 
-    std::cout << "PasteVault backend running on http://localhost:18080" << std::endl;
-    app.port(18080).multithreaded().run();
+    // Read PORT from environment variable (required for cloud hosting)
+    const char* port_env = std::getenv("PORT");
+    uint16_t port = port_env ? static_cast<uint16_t>(std::atoi(port_env)) : 18080;
+
+    std::cout << "PasteVault backend running on port " << port << std::endl;
+    app.port(port).multithreaded().run();
 
     return 0;
 }
