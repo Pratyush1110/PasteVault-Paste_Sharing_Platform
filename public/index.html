@@ -6,6 +6,12 @@
     <title>PasteVault - Fast C++ Pastebin</title>
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2">
+
+    <!-- Inter (UI) + JetBrains Mono (code) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="/style.css">
 
     <!-- Prism.js Dark Theme (Okaidia) CSS -->
@@ -15,39 +21,47 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
+    <!-- Ambient background accents (purely decorative, non-interactive) -->
+    <div class="aurora" aria-hidden="true">
+        <div class="aurora-blob aurora-blob-a"></div>
+        <div class="aurora-blob aurora-blob-b"></div>
+    </div>
+
     <div class="container">
         <header>
-            <h1 onclick="window.location.href='/'" style="cursor: pointer;">🔐 PasteVault</h1>
-            <p>Powered by C++, Crow & SQLite</p>
+            <h1 onclick="window.location.href='/'" style="cursor: pointer;">
+                <span class="logo-mark">🔐</span> PasteVault
+            </h1>
+            <p>Powered by C++, Crow &amp; SQLite</p>
         </header>
 
         <!-- CREATE PASTE VIEW -->
         <section id="create-view" class="card">
             <h2>New Paste</h2>
             <textarea id="paste-content" placeholder="Paste your text or code here..." rows="8"></textarea>
-            
+
             <div class="controls">
-                <label for="ttl-select">Expiration:</label>
+                <label for="ttl-select">Expiration</label>
                 <select id="ttl-select">
                     <option value="-1">Never</option>
                     <option value="5">5 Minutes</option>
                     <option value="60" selected>1 Hour</option>
                     <option value="1440">1 Day</option>
                 </select>
-                <button id="create-btn" onclick="createPaste()">Create Paste</button>
+                <button id="create-btn" class="primary-btn" onclick="createPaste()">Create Paste</button>
             </div>
 
             <div class="controls password-row">
-                <label for="paste-password">Password (optional):</label>
+                <label for="paste-password">Password <span class="label-muted">(optional)</span></label>
                 <input type="password" id="paste-password" placeholder="Leave blank for no encryption" autocomplete="new-password">
             </div>
             <p class="hint">🔒 If you set a password, your paste is encrypted in your browser before it's sent. The server only ever stores ciphertext — we never see your password or your plaintext.</p>
 
             <div id="create-result" class="result-box hidden">
-                <p>Paste created! Shareable Link:</p>
+                <p class="result-label">Paste created! Shareable link:</p>
                 <div class="share-url">
                     <input type="text" id="share-link" readonly>
-                    <button onclick="copyLink()">Copy</button>
+                    <button class="ghost-btn" onclick="copyLink()">Copy</button>
                 </div>
             </div>
         </section>
@@ -69,9 +83,17 @@
                     <p>🔒 This paste is encrypted. Enter the password to view it.</p>
                     <div class="controls">
                         <input type="password" id="decrypt-password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key === 'Enter') attemptDecrypt();">
-                        <button onclick="attemptDecrypt()">Unlock</button>
+                        <button class="primary-btn" onclick="attemptDecrypt()">Unlock</button>
                     </div>
                     <p id="decrypt-error" class="error-text hidden">Incorrect password!</p>
+                </div>
+
+                <!-- Code toolbar: shown alongside the display block -->
+                <div id="code-toolbar" class="code-toolbar hidden">
+                    <span class="code-toolbar-label">Content</span>
+                    <button id="copy-content-btn" class="ghost-btn small-btn" onclick="copyPasteContent()">
+                        <span id="copy-content-btn-text">Copy</span>
+                    </button>
                 </div>
 
                 <!-- Pre & Code block formatted for Prism.js -->
@@ -84,7 +106,7 @@
     <!-- Prism.js Core + Autoloader Plugin -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-    
+
     <script src="/app.js"></script>
 </body>
 </html>

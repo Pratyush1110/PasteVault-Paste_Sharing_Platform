@@ -73,6 +73,7 @@ async function fetchPaste(pasteId) {
                 // Prompt for password; content is only rendered after a
                 // successful local decryption in attemptDecrypt().
                 document.getElementById("decrypt-box").classList.remove("hidden");
+                document.getElementById("code-toolbar").classList.add("hidden");
                 document.getElementById("paste-display-wrapper").classList.add("hidden");
                 document.getElementById("delete-btn").classList.add("hidden");
             } else {
@@ -95,8 +96,10 @@ function renderPasteContent(plaintext) {
     codeElem.textContent = plaintext;
 
     document.getElementById("decrypt-box").classList.add("hidden");
+    document.getElementById("code-toolbar").classList.remove("hidden");
     document.getElementById("paste-display-wrapper").classList.remove("hidden");
     document.getElementById("delete-btn").classList.remove("hidden");
+    resetCopyButton();
 
     // Trigger Prism Syntax Highlighting
     if (window.Prism) {
@@ -158,6 +161,37 @@ function copyLink() {
     copyText.select();
     navigator.clipboard.writeText(copyText.value);
     alert("Copied link to clipboard!");
+}
+
+let copyResetTimer = null;
+
+function copyPasteContent() {
+    const codeElem = document.getElementById("paste-display");
+    const btn = document.getElementById("copy-content-btn");
+    const btnText = document.getElementById("copy-content-btn-text");
+    const text = codeElem.textContent;
+
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add("copied");
+        btnText.textContent = "Copied! ✓";
+
+        clearTimeout(copyResetTimer);
+        copyResetTimer = setTimeout(resetCopyButton, 2000);
+    }).catch(() => {
+        alert("Couldn't copy to clipboard. Your browser may be blocking clipboard access.");
+    });
+}
+
+function resetCopyButton() {
+    const btn = document.getElementById("copy-content-btn");
+    const btnText = document.getElementById("copy-content-btn-text");
+    if (!btn || !btnText) return;
+
+    clearTimeout(copyResetTimer);
+    btn.classList.remove("copied");
+    btnText.textContent = "Copy";
 }
 
 // Route handler on page load
