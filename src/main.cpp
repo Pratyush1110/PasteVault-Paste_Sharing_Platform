@@ -15,24 +15,29 @@ int main() {
     PasteHandler paste_handler(db);
     crow::SimpleApp app;
 
-    // Serve index.html at root "/"
+    // 1. Serve index.html at root "/"
     CROW_ROUTE(app, "/")
     ([](crow::response& res) {
         res.set_static_file_info("public/index.html");
         res.end();
     });
 
-    // Serve static assets (style.css, app.js, etc.)
+    // 2. Attach REST API routes (/api/paste, etc.)
+    setup_routes(app, paste_handler);
+
+    // 3. Dynamic route for static files or Paste ID URLs (e.g., /RCOtjlQ)
     CROW_ROUTE(app, "/<string>")
-    ([](crow::response& res, std::string filename) {
-        res.set_static_file_info("public/" + filename);
+    ([](crow::response& res, std::string path) {
+        // If requesting explicit static files, serve them from public/
+        if (path == "style.css" || path == "app.js" || path == "favicon.ico") {
+            res.set_static_file_info("public/" + path);
+        } else {
+            // For any paste ID path (e.g. /RCOtjlQ), serve index.html
+            res.set_static_file_info("public/index.html");
+        }
         res.end();
     });
 
-    // Attach REST API routes
-    setup_routes(app, paste_handler);
-
-    // Read PORT from environment variable (required for cloud hosting)
     const char* port_env = std::getenv("PORT");
     uint16_t port = port_env ? static_cast<uint16_t>(std::atoi(port_env)) : 18080;
 

@@ -148,3 +148,19 @@ pre {
 .hidden {
     display: none;
 }
+
+.paste-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.secondary-btn {
+    background-color: #334155;
+    color: #f8fafc;
+}
+
+.secondary-btn:hover {
+    background-color: #475569;
+}

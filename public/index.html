@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PasteVault - Fast C++ Pastebin</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🔐 PasteVault</h1>
+            <h1 onclick="window.location.href='/'" style="cursor: pointer;">🔐 PasteVault</h1>
             <p>Powered by C++, Crow & SQLite</p>
         </header>
 
-        <!-- Form to Create Paste -->
-        <section class="card">
+        <!-- CREATE PASTE VIEW (Shown on "/") -->
+        <section id="create-view" class="card">
             <h2>New Paste</h2>
             <textarea id="paste-content" placeholder="Paste your text or code here..." rows="8"></textarea>
             
@@ -38,15 +38,13 @@
             </div>
         </section>
 
-        <!-- Search / Lookup Paste -->
-        <section class="card">
-            <h2>Lookup Paste</h2>
-            <div class="lookup-box">
-                <input type="text" id="lookup-id" placeholder="Enter Paste ID (e.g. RCOtjlQ)">
-                <button onclick="fetchPaste()">Retrieve</button>
+        <!-- VIEW PASTE VIEW (Shown on "/<paste_id>") -->
+        <section id="read-view" class="card hidden">
+            <div class="paste-header">
+                <h2>Paste View</h2>
+                <button class="secondary-btn" onclick="window.location.href='/'">+ New Paste</button>
             </div>
-
-            <div id="view-result" class="result-box hidden">
+            <div id="view-result" class="result-box">
                 <div class="paste-meta">
                     <span id="meta-created"></span>
                     <span id="meta-expires"></span>
@@ -57,6 +55,6 @@
         </section>
     </div>
 
-    <script src="app.js"></script>
+    <script src="/app.js"></script>
 </body>
 </html>

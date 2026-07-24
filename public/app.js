@@ -19,7 +19,8 @@ async function createPaste() {
         const data = await response.json();
 
         if (response.ok) {
-            const shareUrl = `${window.location.origin}/#${data.id}`;
+            // Clean URL path (e.g. http://localhost:18080/RCOtjlQ)
+            const shareUrl = `${window.location.origin}/${data.id}`;
             document.getElementById("share-link").value = shareUrl;
             document.getElementById("create-result").classList.remove("hidden");
         } else {
@@ -30,14 +31,7 @@ async function createPaste() {
     }
 }
 
-async function fetchPaste(idOverride = null) {
-    const pasteId = idOverride || document.getElementById("lookup-id").value.trim();
-
-    if (!pasteId) {
-        alert("Enter a paste ID");
-        return;
-    }
-
+async function fetchPaste(pasteId) {
     try {
         const response = await fetch(`/api/paste/${pasteId}`);
         const data = await response.json();
@@ -52,13 +46,16 @@ async function fetchPaste(idOverride = null) {
             document.getElementById("meta-created").textContent = `Created: ${created}`;
             document.getElementById("meta-expires").textContent = `Expires: ${expires}`;
             
-            document.getElementById("view-result").classList.remove("hidden");
+            // Hide Create section, show Read section
+            document.getElementById("create-view").classList.add("hidden");
+            document.getElementById("read-view").classList.remove("hidden");
         } else {
-            alert(data.error || "Paste not found!");
-            document.getElementById("view-result").classList.add("hidden");
+            alert(data.error || "Paste not found or has expired!");
+            window.location.href = "/";
         }
     } catch (err) {
         alert("Error retrieving paste!");
+        window.location.href = "/";
     }
 }
 
@@ -73,9 +70,7 @@ async function deletePaste() {
 
         if (response.ok) {
             alert("Paste deleted!");
-            document.getElementById("view-result").classList.add("hidden");
-            document.getElementById("lookup-id").value = "";
-            currentPasteId = null;
+            window.location.href = "/";
         } else {
             alert(data.error || "Failed to delete paste");
         }
@@ -91,11 +86,16 @@ function copyLink() {
     alert("Copied link to clipboard!");
 }
 
-// Auto-fetch if hash is present in URL (e.g. http://localhost:18080/#RCOtjlQ)
+// Route handler on page load
 window.addEventListener("load", () => {
-    const hash = window.location.hash.substring(1);
-    if (hash) {
-        document.getElementById("lookup-id").value = hash;
-        fetchPaste(hash);
+    // Extract pathname ID (e.g. "/RCOtjlQ" -> "RCOtjlQ")
+    const path = window.location.pathname.substring(1);
+
+    if (path && path !== "index.html") {
+        fetchPaste(path);
+    } else {
+        // Show Create view on "/"
+        document.getElementById("create-view").classList.remove("hidden");
+        document.getElementById("read-view").classList.add("hidden");
     }
 });
